@@ -1,5 +1,5 @@
 // 客户端服务：列表、筛选（平台/类型/内核/代码状态/价格/维护）、排序、详情
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/generated-client'
 import prisma from '../utils/prisma'
 import { buildMeta, parsePagination } from '../utils/api'
 

@@ -1,5 +1,5 @@
 // 价格折算工具：按方案第 7.1 节规则，将不同计费周期折算为月均价
-import type { BillingPeriod, Currency } from '@prisma/client'
+import type { BillingPeriod, Currency } from '@prisma/generated-client'
 
 export interface NormalizedPrice {
   amount: number

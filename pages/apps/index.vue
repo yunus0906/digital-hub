@@ -7,11 +7,11 @@ const router = useRouter()
 
 const filters = reactive({
   q: (route.query.q as string) ?? '',
-  platform: (route.query.platform as string) ?? '',
-  applicationType: (route.query.applicationType as string) ?? '',
-  codeStatus: (route.query.codeStatus as string) ?? '',
-  priceStatus: (route.query.priceStatus as string) ?? '',
-  maintenanceStatus: (route.query.maintenanceStatus as string) ?? '',
+  platform: (route.query.platform as string) ?? '__all__',
+  applicationType: (route.query.applicationType as string) ?? '__all__',
+  codeStatus: (route.query.codeStatus as string) ?? '__all__',
+  priceStatus: (route.query.priceStatus as string) ?? '__all__',
+  maintenanceStatus: (route.query.maintenanceStatus as string) ?? '__all__',
   sort: (route.query.sort as string) ?? 'recommended',
   order: (route.query.order as string) ?? 'desc',
   page: Number(route.query.page ?? 1),
@@ -22,7 +22,7 @@ const filterFields: FilterField[] = [
   {
     key: 'platform', label: '平台', type: 'select',
     options: [
-      { value: '', label: '全部平台' },
+      { value: '__all__', label: '全部平台' },
       { value: 'windows', label: 'Windows' },
       { value: 'macos', label: 'macOS' },
       { value: 'linux', label: 'Linux' },
@@ -34,7 +34,7 @@ const filterFields: FilterField[] = [
   {
     key: 'applicationType', label: '类型', type: 'select',
     options: [
-      { value: '', label: '全部类型' },
+      { value: '__all__', label: '全部类型' },
       { value: 'client', label: '客户端' },
       { value: 'core', label: '内核' },
       { value: 'rules_tool', label: '规则工具' },
@@ -44,7 +44,7 @@ const filterFields: FilterField[] = [
   {
     key: 'codeStatus', label: '代码状态', type: 'select',
     options: [
-      { value: '', label: '全部代码状态' },
+      { value: '__all__', label: '全部代码状态' },
       { value: 'open_source', label: '开源' },
       { value: 'closed_source', label: '闭源' },
       { value: 'partial_source', label: '部分开源' },
@@ -54,7 +54,7 @@ const filterFields: FilterField[] = [
   {
     key: 'priceStatus', label: '价格', type: 'select',
     options: [
-      { value: '', label: '全部价格' },
+      { value: '__all__', label: '全部价格' },
       { value: 'free', label: '免费' },
       { value: 'paid', label: '付费' },
       { value: 'freemium', label: '免费增值' },
@@ -63,7 +63,7 @@ const filterFields: FilterField[] = [
   {
     key: 'maintenanceStatus', label: '维护状态', type: 'select',
     options: [
-      { value: '', label: '全部维护状态' },
+      { value: '__all__', label: '全部维护状态' },
       { value: 'active', label: '活跃' },
       { value: 'low_activity', label: '低活跃' },
       { value: 'discontinued', label: '停止维护' },
@@ -81,7 +81,7 @@ const sortOptions = [
 function buildQuery() {
   const q: Record<string, string> = {}
   Object.entries(filters).forEach(([k, v]) => {
-    if (v !== '' && v !== null && v !== undefined && !(k === 'page' && v === 1)) {
+    if (v !== '' && v !== null && v !== undefined && v !== '__all__' && !(k === 'page' && v === 1)) {
       q[k] = String(v)
     }
   })
@@ -99,8 +99,8 @@ function scheduleApply() {
 
 function clearFilters() {
   Object.assign(filters, {
-    q: '', platform: '', applicationType: '', codeStatus: '', priceStatus: '',
-    maintenanceStatus: '', sort: 'recommended', order: 'desc', page: 1,
+    q: '', platform: '__all__', applicationType: '__all__', codeStatus: '__all__', priceStatus: '__all__',
+    maintenanceStatus: '__all__', sort: 'recommended', order: 'desc', page: 1,
   })
   router.replace({ path: '/apps' })
 }
@@ -128,7 +128,7 @@ const meta = computed(() => data.value?.meta ?? { page: 1, pageSize: 20, total: 
 
 const activeCount = computed(
   () => ['q', 'platform', 'applicationType', 'codeStatus', 'priceStatus', 'maintenanceStatus']
-    .filter(k => (filters as any)[k]).length,
+    .filter(k => { const v = (filters as any)[k]; return v && v !== '__all__' }).length,
 )
 
 function codeStatusLabel(s: string) {
@@ -181,35 +181,22 @@ function fmtDate(d: string | null) {
           <div class="flex items-center gap-2">
             <label
               for="a-sort"
-              class="text-sm text-gray-600"
+              class="text-sm text-neutral-600"
             >排序</label>
-            <select
+            <USelect
               id="a-sort"
               v-model="filters.sort"
-              class="select !py-1.5 !text-[13px]"
+              :items="sortOptions"
+              size="sm"
               @change="applyNow"
-            >
-              <option
-                v-for="s in sortOptions"
-                :key="s.value"
-                :value="s.value"
-              >
-                {{ s.label }}
-              </option>
-            </select>
-            <select
+            />
+            <USelect
               v-model="filters.order"
-              class="select !py-1.5 !text-[13px]"
+              size="sm"
               aria-label="排序方向"
+              :items="[{ value: 'desc', label: '降序' }, { value: 'asc', label: '升序' }]"
               @change="applyNow"
-            >
-              <option value="desc">
-                降序
-              </option>
-              <option value="asc">
-                升序
-              </option>
-            </select>
+            />
           </div>
         </div>
 
@@ -225,27 +212,31 @@ function fmtDate(d: string | null) {
           <p class="text-sm text-red-600">
             加载失败，请稍后重试
           </p>
-          <button
-            class="btn-secondary mt-4"
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="mt-4"
             @click="() => refresh()"
           >
             重试
-          </button>
+          </UButton>
         </div>
         <div
           v-else-if="list.length === 0"
-          class="rounded-xl border border-dashed border-gray-300 p-12 text-center"
+          class="rounded-xl border border-dashed border-neutral-300 p-12 text-center"
         >
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-neutral-500">
             没有符合条件的客户端
           </p>
-          <button
+          <UButton
             v-if="activeCount > 0"
-            class="btn-secondary mt-4"
+            color="neutral"
+            variant="outline"
+            class="mt-4"
             @click="clearFilters"
           >
             清空筛选
-          </button>
+          </UButton>
         </div>
         <div
           v-else
@@ -255,34 +246,38 @@ function fmtDate(d: string | null) {
             v-for="item in list"
             :key="item.slug"
             :to="`/apps/${item.slug}`"
-            class="card block p-4"
+            class="block rounded-xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
           >
             <div class="flex items-start gap-2.5">
               <span class="logo-fallback h-10 w-10 shrink-0 rounded-lg text-sm">{{ item.name[0] }}</span>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center justify-between gap-2">
-                  <h3 class="truncate text-sm font-semibold text-gray-900">{{ item.name }}</h3>
-                  <span class="tag shrink-0 !px-1.5 !py-0.5 !text-[11px]">{{ codeStatusLabel(item.codeStatus) }}</span>
+                  <h3 class="truncate text-sm font-semibold text-neutral-900">{{ item.name }}</h3>
+                  <UBadge
+                    color="neutral"
+                    variant="subtle"
+                    size="sm"
+                  >{{ codeStatusLabel(item.codeStatus) }}</UBadge>
                 </div>
                 <p
                   v-if="item.summary"
-                  class="mt-0.5 line-clamp-1 text-xs text-gray-500"
+                  class="mt-0.5 line-clamp-1 text-xs text-neutral-500"
                 >{{ item.summary }}</p>
               </div>
             </div>
 
-            <div class="mt-3 grid grid-cols-3 gap-1.5 border-t border-gray-100 pt-2.5 text-center text-xs">
+            <div class="mt-3 grid grid-cols-3 gap-1.5 border-t border-neutral-100 pt-2.5 text-center text-xs">
               <div>
-                <p class="text-sm font-semibold text-gray-900">{{ item.starsCount ?? '—' }}</p>
-                <p class="text-gray-500">Stars</p>
+                <p class="text-sm font-semibold text-neutral-900">{{ item.starsCount ?? '—' }}</p>
+                <p class="text-neutral-500">Stars</p>
               </div>
               <div>
-                <p class="text-sm font-semibold text-gray-900">{{ item.forksCount ?? '—' }}</p>
-                <p class="text-gray-500">Forks</p>
+                <p class="text-sm font-semibold text-neutral-900">{{ item.forksCount ?? '—' }}</p>
+                <p class="text-neutral-500">Forks</p>
               </div>
               <div>
-                <p class="text-sm font-semibold text-gray-900">{{ fmtDate(item.latestReleaseAt) }}</p>
-                <p class="text-gray-500">最近 Release</p>
+                <p class="text-sm font-semibold text-neutral-900">{{ fmtDate(item.latestReleaseAt) }}</p>
+                <p class="text-neutral-500">最近 Release</p>
               </div>
             </div>
 
@@ -290,11 +285,13 @@ function fmtDate(d: string | null) {
               v-if="item.platforms?.length"
               class="mt-2 flex flex-wrap gap-1"
             >
-              <span
+              <UBadge
                 v-for="pl in item.platforms"
                 :key="pl.code"
-                class="tag !px-1.5 !py-0.5 !text-[11px]"
-              >{{ pl.name }}</span>
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              >{{ pl.name }}</UBadge>
             </div>
           </NuxtLink>
         </div>
@@ -303,21 +300,23 @@ function fmtDate(d: string | null) {
           v-if="meta.totalPages > 1"
           class="mt-6 flex items-center justify-center gap-2"
         >
-          <button
-            class="btn-secondary"
+          <UButton
+            color="neutral"
+            variant="outline"
             :disabled="meta.page <= 1"
             @click="goPage(meta.page - 1)"
           >
             上一页
-          </button>
-          <span class="text-sm text-gray-600">第 {{ meta.page }} / {{ meta.totalPages }} 页</span>
-          <button
-            class="btn-secondary"
+          </UButton>
+          <span class="text-sm text-neutral-600">第 {{ meta.page }} / {{ meta.totalPages }} 页</span>
+          <UButton
+            color="neutral"
+            variant="outline"
             :disabled="meta.page >= meta.totalPages"
             @click="goPage(meta.page + 1)"
           >
             下一页
-          </button>
+          </UButton>
         </div>
       </div>
     </div>

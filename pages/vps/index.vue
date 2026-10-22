@@ -8,7 +8,7 @@ const router = useRouter()
 const filters = reactive({
   q: (route.query.q as string) ?? '',
   countryCode: (route.query.countryCode as string) ?? '',
-  productType: (route.query.productType as string) ?? '',
+  productType: (route.query.productType as string) ?? '__all__',
   minMemory: (route.query.minMemory as string) ?? '',
   minVcpu: (route.query.minVcpu as string) ?? '',
   minPrice: (route.query.minPrice as string) ?? '',
@@ -23,7 +23,7 @@ const filterFields: FilterField[] = [
   {
     key: 'productType', label: '产品类型', type: 'select',
     options: [
-      { value: '', label: '全部类型' },
+      { value: '__all__', label: '全部类型' },
       { value: 'vps', label: 'VPS' },
       { value: 'cloud_vm', label: '云主机' },
       { value: 'dedicated_server', label: '独立服务器' },
@@ -47,7 +47,7 @@ const sortOptions = [
 function buildQuery() {
   const q: Record<string, string> = {}
   Object.entries(filters).forEach(([k, v]) => {
-    if (v !== '' && v !== null && v !== undefined && !(k === 'page' && v === 1)) {
+    if (v !== '' && v !== null && v !== undefined && v !== '__all__' && !(k === 'page' && v === 1)) {
       q[k] = String(v)
     }
   })
@@ -65,7 +65,7 @@ function scheduleApply() {
 
 function clearFilters() {
   Object.assign(filters, {
-    q: '', countryCode: '', productType: '', minMemory: '', minVcpu: '',
+    q: '', countryCode: '', productType: '__all__', minMemory: '', minVcpu: '',
     minPrice: '', maxPrice: '', sort: 'recommended', order: 'desc', page: 1,
   })
   router.replace({ path: '/vps' })
@@ -94,7 +94,7 @@ const meta = computed(() => data.value?.meta ?? { page: 1, pageSize: 20, total: 
 
 const activeCount = computed(
   () => ['q', 'countryCode', 'productType', 'minMemory', 'minVcpu', 'minPrice', 'maxPrice']
-    .filter(k => (filters as any)[k]).length,
+    .filter(k => { const v = (filters as any)[k]; return v && v !== '__all__' }).length,
 )
 
 function fmtPrice(v: number | null) {
@@ -143,35 +143,22 @@ function fmtMem(mb: number | null) {
           <div class="flex items-center gap-2">
             <label
               for="v-sort"
-              class="text-sm text-gray-600"
+              class="text-sm text-neutral-600"
             >排序</label>
-            <select
+            <USelect
               id="v-sort"
               v-model="filters.sort"
-              class="select !py-1.5 !text-[13px]"
+              :items="sortOptions"
+              size="sm"
               @change="applyNow"
-            >
-              <option
-                v-for="s in sortOptions"
-                :key="s.value"
-                :value="s.value"
-              >
-                {{ s.label }}
-              </option>
-            </select>
-            <select
+            />
+            <USelect
               v-model="filters.order"
-              class="select !py-1.5 !text-[13px]"
+              size="sm"
               aria-label="排序方向"
+              :items="[{ value: 'asc', label: '升序' }, { value: 'desc', label: '降序' }]"
               @change="applyNow"
-            >
-              <option value="asc">
-                升序
-              </option>
-              <option value="desc">
-                降序
-              </option>
-            </select>
+            />
           </div>
         </div>
 
@@ -187,27 +174,31 @@ function fmtMem(mb: number | null) {
           <p class="text-sm text-red-600">
             加载失败，请稍后重试
           </p>
-          <button
-            class="btn-secondary mt-4"
+          <UButton
+            color="neutral"
+            variant="outline"
+            class="mt-4"
             @click="() => refresh()"
           >
             重试
-          </button>
+          </UButton>
         </div>
         <div
           v-else-if="list.length === 0"
-          class="rounded-xl border border-dashed border-gray-300 p-12 text-center"
+          class="rounded-xl border border-dashed border-neutral-300 p-12 text-center"
         >
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-neutral-500">
             没有符合条件的套餐
           </p>
-          <button
+          <UButton
             v-if="activeCount > 0"
-            class="btn-secondary mt-4"
+            color="neutral"
+            variant="outline"
+            class="mt-4"
             @click="clearFilters"
           >
             清空筛选
-          </button>
+          </UButton>
         </div>
         <div
           v-else
@@ -217,7 +208,7 @@ function fmtMem(mb: number | null) {
             v-for="item in list"
             :key="item.planId"
             :to="`/vps/${item.productSlug}`"
-            class="card block p-4"
+            class="block rounded-xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
           >
             <div class="flex items-center justify-between">
               <h3 class="truncate text-sm font-semibold text-gray-900">{{ item.planName }}</h3>
@@ -262,21 +253,23 @@ function fmtMem(mb: number | null) {
           v-if="meta.totalPages > 1"
           class="mt-6 flex items-center justify-center gap-2"
         >
-          <button
-            class="btn-secondary"
+          <UButton
+            color="neutral"
+            variant="outline"
             :disabled="meta.page <= 1"
             @click="goPage(meta.page - 1)"
           >
             上一页
-          </button>
-          <span class="text-sm text-gray-600">第 {{ meta.page }} / {{ meta.totalPages }} 页</span>
-          <button
-            class="btn-secondary"
+          </UButton>
+          <span class="text-sm text-neutral-600">第 {{ meta.page }} / {{ meta.totalPages }} 页</span>
+          <UButton
+            color="neutral"
+            variant="outline"
             :disabled="meta.page >= meta.totalPages"
             @click="goPage(meta.page + 1)"
           >
             下一页
-          </button>
+          </UButton>
         </div>
       </div>
     </div>

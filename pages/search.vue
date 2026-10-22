@@ -70,18 +70,22 @@ useHead(() => ({ title: `搜索 ${q.value} - DigitalHub` }))
         v-for="item in results"
         :key="item.slug"
         :to="`${categoryPath(item.category)}/${item.slug}`"
-        class="card block p-4"
+        class="block rounded-xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
       >
         <div class="flex items-center gap-3">
           <span class="logo-fallback h-10 w-10 shrink-0 text-sm">{{ item.name[0] }}</span>
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
-              <p class="truncate font-medium text-gray-900">{{ item.name }}</p>
-              <span class="tag shrink-0">{{ categoryLabel(item.category) }}</span>
+              <p class="truncate font-medium text-neutral-900">{{ item.name }}</p>
+              <UBadge
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              >{{ categoryLabel(item.category) }}</UBadge>
             </div>
             <p
               v-if="item.summary"
-              class="mt-1 line-clamp-1 text-xs text-gray-600"
+              class="mt-1 line-clamp-1 text-xs text-neutral-600"
             >{{ item.summary }}</p>
           </div>
         </div>

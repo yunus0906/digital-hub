@@ -37,7 +37,7 @@ const gridClass = computed(() => {
     <div
       v-for="i in count"
       :key="i"
-      class="card p-5"
+      class="rounded-xl border border-neutral-200 bg-white p-5"
     >
       <div class="flex items-start gap-3">
         <div class="skeleton h-12 w-12 shrink-0 rounded-xl" />

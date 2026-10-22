@@ -11,9 +11,9 @@ useHead({ title: 'AI 模型与 API - DigitalHub' })
     <p class="mt-3 text-sm text-gray-600">
       模型价格数据库、Token 成本计算器等能力正在规划中，敬请期待。
     </p>
-    <NuxtLink
+    <UButton
       to="/"
-      class="btn-primary mt-8 inline-block"
-    >返回首页</NuxtLink>
+      size="lg"
+    >返回首页</UButton>
   </div>
 </template>

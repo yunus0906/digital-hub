@@ -1,6 +1,6 @@
 // 机场服务：列表查询、筛选、排序、详情
 // 遵循方案第 6.2、7 节业务规则
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/generated-client'
 import prisma from '../utils/prisma'
 import { buildMeta, parsePagination } from '../utils/api'
 import { normalizePrice, toNumber } from '../utils/price'

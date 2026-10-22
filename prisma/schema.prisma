@@ -4,6 +4,9 @@
 
 generator client {
   provider = "prisma-client-js"
+  // 输出到项目内固定路径，规避 pnpm 隔离布局下 node_modules/.prisma
+  // 符号链接缺失导致 @prisma/client 类型解析失败的问题
+  output   = "../prisma/generated/client"
 }
 
 datasource db {

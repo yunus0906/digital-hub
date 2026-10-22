@@ -67,20 +67,19 @@ function isActive(to: string) {
           role="search"
           @submit.prevent="onSearch"
         >
-          <input
+          <UInput
             v-model="searchQuery"
             type="search"
             placeholder="搜索服务、客户端、VPS…"
             aria-label="全站搜索"
-            class="input"
-          >
-          <button
+            class="flex-1"
+          />
+          <UButton
             type="submit"
-            class="btn-primary shrink-0"
             aria-label="搜索"
           >
             搜索
-          </button>
+          </UButton>
         </form>
       </div>
     </header>

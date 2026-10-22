@@ -9,7 +9,7 @@ export default defineNuxtConfig({
     host: '127.0.0.1',
   },
 
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: ['@nuxt/ui'],
   devtools: { enabled: false },
 
   // Windows + pnpm 组合下 SSR 渲染会 403（详见下方 vite 段注释）
@@ -46,6 +46,18 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+
+  ui: {
+    // 本项目当前以浅色视觉为主，固定 light，后续可放开 dark 支持。
+    colorMode: {
+      preference: 'light',
+      fallback: 'light',
+    },
+    // 关闭 Nuxt UI 的字体自动加载（@nuxt/fonts），
+    // 避免离线/代理环境下 dev 启动时反复重试拉取 Google Fonts 元数据。
+    // 本项目使用系统字体栈（见 assets/css/main.css 的 --font-sans）。
+    fonts: false,
+  },
 
   runtimeConfig: {
     // 服务端可用

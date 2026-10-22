@@ -1,7 +1,7 @@
 // DigitalHub 种子数据
 // 重要：以下所有数据均为【示例数据】，非真实厂商/价格/评分。
 // 仅用于本地开发与测试，禁止将示例数据伪装成真实商家数据上线。
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/generated-client'
 
 const prisma = new PrismaClient()
 
@@ -71,7 +71,7 @@ async function main() {
       airportDetail: {
         create: { trafficType: 'unlimited', deviceLimit: 5, serviceStatus: 'active', refundPolicy: '24 小时内可退款（示例）' },
       },
-      tags: { create: [{ tagId: tags[2].id }, { tagId: tags[3].id }] },
+      tags: { create: [{ tagId: tags[2]!.id }, { tagId: tags[3]!.id }] },
       dataSources: {
         create: [{ dataSourceId: srcManual.id, fieldKey: 'price', confidence: 80, verifiedAt: new Date() }],
       },
@@ -112,7 +112,7 @@ async function main() {
       airportDetail: {
         create: { trafficType: 'fixed', monthlyTrafficGb: 200, deviceLimit: 3, serviceStatus: 'active' },
       },
-      tags: { create: [{ tagId: tags[0].id }] },
+      tags: { create: [{ tagId: tags[0]!.id }] },
       dataSources: {
         create: [{ dataSourceId: srcManual.id, fieldKey: 'price', confidence: 60 }],
       },
@@ -176,7 +176,7 @@ async function main() {
           metricsObservedAt: new Date(),
         },
       },
-      tags: { create: [{ tagId: tags[4].id }, { tagId: tags[5].id }] },
+      tags: { create: [{ tagId: tags[4]!.id }, { tagId: tags[5]!.id }] },
       dataSources: { create: [{ dataSourceId: srcGithub.id, fieldKey: 'stars', confidence: 90, verifiedAt: new Date() }] },
     },
   })
@@ -247,7 +247,7 @@ async function main() {
       dataStatus: 'verified',
       lastVerifiedAt: new Date(),
       publishedAt: new Date(),
-      tags: { create: [{ tagId: tags[6].id }, { tagId: tags[7].id }] },
+      tags: { create: [{ tagId: tags[6]!.id }, { tagId: tags[7]!.id }] },
       dataSources: { create: [{ dataSourceId: srcOfficial.id, fieldKey: 'price', confidence: 85, verifiedAt: new Date() }] },
     },
   })

@@ -54,23 +54,25 @@ useHead(() => ({
       <p class="text-sm text-red-600">
         未找到该客户端
       </p>
-      <NuxtLink
+      <UButton
         to="/apps"
-        class="btn-secondary mt-4 inline-block"
-      >返回列表</NuxtLink>
+        color="neutral"
+        variant="outline"
+        class="mt-4"
+      >返回列表</UButton>
     </div>
 
     <div v-else>
-      <div class="card p-6">
+      <div class="rounded-xl border border-neutral-200 bg-white p-6">
         <div class="flex items-start gap-4">
           <span class="logo-fallback h-16 w-16 shrink-0 text-2xl">{{ app.name[0] }}</span>
           <div class="flex-1">
-            <h1 class="text-2xl font-bold text-gray-900">
+            <h1 class="text-2xl font-bold text-neutral-900">
               {{ app.name }}
             </h1>
             <p
               v-if="app.summary"
-              class="mt-2 text-sm text-gray-600"
+              class="mt-2 text-sm text-neutral-600"
             >
               {{ app.summary }}
             </p>
@@ -78,41 +80,51 @@ useHead(() => ({
               v-if="app.clientApp"
               class="mt-3 flex flex-wrap gap-2 text-xs"
             >
-              <span class="tag-blue">{{ codeStatusLabel(app.clientApp.codeStatus) }}</span>
-              <span class="tag-green">{{ priceStatusLabel(app.clientApp.priceStatus) }}</span>
-              <span class="tag-amber">{{ maintenanceLabel(app.clientApp.maintenanceStatus) }}</span>
-              <span
+              <UBadge
+                color="primary"
+                variant="subtle"
+              >{{ codeStatusLabel(app.clientApp.codeStatus) }}</UBadge>
+              <UBadge
+                color="success"
+                variant="subtle"
+              >{{ priceStatusLabel(app.clientApp.priceStatus) }}</UBadge>
+              <UBadge
+                color="warning"
+                variant="subtle"
+              >{{ maintenanceLabel(app.clientApp.maintenanceStatus) }}</UBadge>
+              <UBadge
                 v-if="app.clientApp.licenseName"
-                class="tag"
-              >{{ app.clientApp.licenseName }}</span>
+                color="neutral"
+                variant="subtle"
+              >{{ app.clientApp.licenseName }}</UBadge>
             </div>
           </div>
           <div class="flex shrink-0 flex-col gap-2">
-            <a
+            <UButton
               v-if="app.officialUrl"
-              :href="app.officialUrl"
+              :to="app.officialUrl"
               target="_blank"
-              rel="noopener noreferrer"
-              class="btn-primary external-link"
-            >官网</a>
-            <a
+              trailing-icon="i-lucide-arrow-up-right"
+            >官网</UButton>
+            <UButton
               v-if="app.clientApp?.repositoryUrl"
-              :href="app.clientApp.repositoryUrl"
+              :to="app.clientApp.repositoryUrl"
               target="_blank"
-              rel="noopener noreferrer"
-              class="btn-secondary external-link"
-            >仓库</a>
+              color="neutral"
+              variant="outline"
+              trailing-icon="i-lucide-arrow-up-right"
+            >仓库</UButton>
           </div>
         </div>
 
         <div
           v-if="app.description"
-          class="mt-6 border-t border-gray-100 pt-4"
+          class="mt-6 border-t border-neutral-100 pt-4"
         >
-          <h2 class="mb-2 text-base font-semibold text-gray-900">
+          <h2 class="mb-2 text-base font-semibold text-neutral-900">
             详细介绍
           </h2>
-          <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+          <p class="whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
             {{ app.description }}
           </p>
         </div>
@@ -122,35 +134,35 @@ useHead(() => ({
           v-if="app.clientApp"
           class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4"
         >
-          <div class="rounded-lg bg-slate-50 p-4">
-            <p class="text-xs text-gray-500">
+          <div class="rounded-lg bg-neutral-50 p-4">
+            <p class="text-xs text-neutral-500">
               Stars
             </p>
-            <p class="mt-1 font-medium text-gray-900">
+            <p class="mt-1 font-medium text-neutral-900">
               {{ app.clientApp.starsCount ?? '—' }}
             </p>
           </div>
-          <div class="rounded-lg bg-slate-50 p-4">
-            <p class="text-xs text-gray-500">
+          <div class="rounded-lg bg-neutral-50 p-4">
+            <p class="text-xs text-neutral-500">
               Forks
             </p>
-            <p class="mt-1 font-medium text-gray-900">
+            <p class="mt-1 font-medium text-neutral-900">
               {{ app.clientApp.forksCount ?? '—' }}
             </p>
           </div>
-          <div class="rounded-lg bg-slate-50 p-4">
-            <p class="text-xs text-gray-500">
+          <div class="rounded-lg bg-neutral-50 p-4">
+            <p class="text-xs text-neutral-500">
               最近 Release
             </p>
-            <p class="mt-1 font-medium text-gray-900">
+            <p class="mt-1 font-medium text-neutral-900">
               {{ fmtDate(app.clientApp.latestReleaseAt) }}
             </p>
           </div>
-          <div class="rounded-lg bg-slate-50 p-4">
-            <p class="text-xs text-gray-500">
+          <div class="rounded-lg bg-neutral-50 p-4">
+            <p class="text-xs text-neutral-500">
               最近提交
             </p>
-            <p class="mt-1 font-medium text-gray-900">
+            <p class="mt-1 font-medium text-neutral-900">
               {{ fmtDate(app.clientApp.lastCommitAt) }}
             </p>
           </div>
@@ -160,32 +172,33 @@ useHead(() => ({
       <!-- 平台支持 -->
       <div
         v-if="app.clientApp?.platforms?.length"
-        class="card mt-6 p-6"
+        class="mt-6 rounded-xl border border-neutral-200 bg-white p-6"
       >
-        <h2 class="text-base font-semibold text-gray-900">
+        <h2 class="text-base font-semibold text-neutral-900">
           支持平台
         </h2>
         <div class="mt-3 flex flex-wrap gap-2">
-          <span
+          <UBadge
             v-for="pl in app.clientApp.platforms"
             :key="pl.code"
-            class="tag"
+            color="neutral"
+            variant="subtle"
           >
             {{ pl.name }}
             <span
               v-if="pl.supportStatus !== 'full'"
-              class="ml-1 text-gray-400"
+              class="ml-1 opacity-70"
             >（{{ compatLabel(pl.supportStatus) }}）</span>
-          </span>
+          </UBadge>
         </div>
       </div>
 
       <!-- 内核兼容 -->
       <div
         v-if="app.clientApp?.coreCompat?.length"
-        class="card mt-6 p-6"
+        class="mt-6 rounded-xl border border-neutral-200 bg-white p-6"
       >
-        <h2 class="text-base font-semibold text-gray-900">
+        <h2 class="text-base font-semibold text-neutral-900">
           内核兼容性
         </h2>
         <ul class="mt-3 space-y-2 text-sm">
@@ -194,11 +207,14 @@ useHead(() => ({
             :key="i"
             class="flex items-center gap-2"
           >
-            <span class="font-medium text-gray-900">{{ c.name }}</span>
-            <span class="tag-blue">{{ compatLabel(c.compatibilityStatus) }}</span>
+            <span class="font-medium text-neutral-900">{{ c.name }}</span>
+            <UBadge
+              color="primary"
+              variant="subtle"
+            >{{ compatLabel(c.compatibilityStatus) }}</UBadge>
             <span
               v-if="c.supportedVersionRange"
-              class="text-xs text-gray-500"
+              class="text-xs text-neutral-500"
             >{{ c.supportedVersionRange }}</span>
           </li>
         </ul>
@@ -207,30 +223,30 @@ useHead(() => ({
       <!-- 版本历史 -->
       <div
         v-if="app.releases?.length"
-        class="card mt-6 overflow-hidden"
+        class="mt-6 overflow-hidden rounded-xl border border-neutral-200 bg-white"
       >
-        <div class="border-b border-gray-100 px-6 py-4">
-          <h2 class="text-base font-semibold text-gray-900">
+        <div class="border-b border-neutral-100 px-6 py-4">
+          <h2 class="text-base font-semibold text-neutral-900">
             版本历史
           </h2>
         </div>
-        <ul class="divide-y divide-gray-100">
+        <ul class="divide-y divide-neutral-100">
           <li
             v-for="r in app.releases.slice(0, 10)"
             :key="r.id"
             class="flex items-center justify-between px-6 py-3"
           >
             <div>
-              <span class="font-medium text-gray-900">v{{ r.version }}</span>
-              <span class="ml-2 text-xs text-gray-500">{{ fmtDate(r.releasedAt) }}</span>
+              <span class="font-medium text-neutral-900">v{{ r.version }}</span>
+              <span class="ml-2 text-xs text-neutral-500">{{ fmtDate(r.releasedAt) }}</span>
             </div>
             <a
               v-if="r.downloadUrl"
               :href="r.downloadUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-sm text-blue-600 external-link"
-            >下载</a>
+              class="text-sm text-blue-600"
+            >下载 ↗</a>
           </li>
         </ul>
       </div>
@@ -238,22 +254,25 @@ useHead(() => ({
       <!-- 数据来源 -->
       <div
         v-if="app.dataSources?.length"
-        class="card mt-6 p-6"
+        class="mt-6 rounded-xl border border-neutral-200 bg-white p-6"
       >
-        <h2 class="text-base font-semibold text-gray-900">
+        <h2 class="text-base font-semibold text-neutral-900">
           数据来源
         </h2>
-        <ul class="mt-3 space-y-2 text-sm text-gray-600">
+        <ul class="mt-3 space-y-2 text-sm text-neutral-600">
           <li
             v-for="(ds, i) in app.dataSources"
             :key="i"
             class="flex items-center gap-2"
           >
-            <span class="tag-blue">{{ ds.type }}</span>
+            <UBadge
+              color="primary"
+              variant="subtle"
+            >{{ ds.type }}</UBadge>
             <span>{{ ds.name }}</span>
             <span
               v-if="ds.verifiedAt"
-              class="text-xs text-gray-400"
+              class="text-xs text-neutral-400"
             >核验：{{ fmtDate(ds.verifiedAt) }}</span>
           </li>
         </ul>

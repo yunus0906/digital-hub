@@ -68,19 +68,20 @@ const categories = computed(() => [
               && navigateTo({ path: '/search', query: { q: ($event.target as HTMLFormElement).q.value } })
           "
         >
-          <input
+          <UInput
             name="q"
             type="search"
             placeholder="搜索服务、客户端、VPS…"
             aria-label="全站搜索"
-            class="input h-12 flex-1 text-base"
-          >
-          <button
+            size="xl"
+            class="flex-1"
+          />
+          <UButton
             type="submit"
-            class="btn-primary h-12 px-6"
+            size="xl"
           >
             搜索
-          </button>
+          </UButton>
         </form>
       </div>
     </section>
@@ -88,23 +89,22 @@ const categories = computed(() => [
     <!-- 分类入口 -->
     <section class="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <NuxtLink
+        <UCard
           v-for="c in categories"
           :key="c.to"
-          :to="c.disabled ? '#' : c.to"
-          class="card block p-6"
+          :to="c.disabled ? undefined : c.to"
           :class="c.disabled ? 'cursor-not-allowed opacity-60' : 'hover:border-blue-300'"
         >
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900">{{ c.label }}</h2>
-            <span class="text-sm text-gray-400">{{ c.count }} 个</span>
+            <h2 class="text-lg font-semibold text-neutral-900">{{ c.label }}</h2>
+            <span class="text-sm text-neutral-400">{{ c.count }} 个</span>
           </div>
-          <p class="mt-2 text-sm text-gray-600">{{ c.desc }}</p>
+          <p class="mt-2 text-sm text-neutral-600">{{ c.desc }}</p>
           <span
             v-if="c.disabled"
             class="mt-3 inline-block text-xs text-amber-600"
           >即将推出</span>
-        </NuxtLink>
+        </UCard>
       </div>
     </section>
 
@@ -136,26 +136,25 @@ const categories = computed(() => [
         v-else
         class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <NuxtLink
+        <UCard
           v-for="item in homeData.recent"
           :key="item.slug"
           :to="`${categoryPath(item.category)}/${item.slug}`"
-          class="card block p-4"
         >
           <div class="flex items-center gap-3">
             <span class="logo-fallback h-10 w-10 text-sm">{{ item.name[0] }}</span>
             <div class="min-w-0">
-              <p class="truncate font-medium text-gray-900">{{ item.name }}</p>
-              <p class="text-xs text-gray-500">{{ categoryLabel(item.category) }}</p>
+              <p class="truncate font-medium text-neutral-900">{{ item.name }}</p>
+              <p class="text-xs text-neutral-500">{{ categoryLabel(item.category) }}</p>
             </div>
           </div>
           <p
             v-if="item.summary"
-            class="mt-2 line-clamp-2 text-xs text-gray-600"
+            class="mt-2 line-clamp-2 text-xs text-neutral-600"
           >
             {{ item.summary }}
           </p>
-        </NuxtLink>
+        </UCard>
       </div>
     </section>
 

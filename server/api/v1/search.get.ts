@@ -1,5 +1,5 @@
 // 全站搜索 API
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/generated-client'
 import prisma from '../../utils/prisma'
 import { ok, buildMeta, parsePagination } from '../../utils/api'
 

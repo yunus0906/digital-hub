@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 通用筛选侧栏：
 // - 桌面端（lg+）作为左侧 sticky 栏展示
-// - 移动端折叠为一个「筛选」按钮 + 底部抽屉（bottom sheet）
+// - 移动端折叠为一个「筛选」按钮 + 底部抽屉（USlideover，side="bottom"）
 // - 筛选项由外部传入的 fields 配置驱动，支持 text / select / number 三种类型
 // - 默认「即时生效」：任意字段变化即触发 update 事件（由父组件决定是否防抖/刷新）
 
@@ -67,60 +67,54 @@ function onDrawerApply() {
   emit('apply')
   drawerOpen.value = false
 }
+
+// 将 FilterOption[] 转成 USelect 需要的 { value, label } 形式
+function selectItems(f: FilterField) {
+  return (f.options ?? []).map(o => ({ value: o.value, label: o.label }))
+}
+
+// 统一渲染：桌面侧栏与抽屉复用同一套字段渲染逻辑
+function fieldValue(f: FilterField) {
+  return props.modelValue[f.key] ?? ''
+}
 </script>
 
 <template>
   <div>
     <!-- 移动端：筛选触发按钮（< lg 显示） -->
     <div class="mb-4 flex items-center gap-2 lg:hidden">
-      <button
-        class="btn-secondary flex-1"
-        type="button"
+      <UButton
+        color="neutral"
+        variant="outline"
+        class="flex-1"
+        :label="`筛选${activeCount > 0 ? ` (${activeCount})` : ''}`"
+        icon="i-lucide-sliders-horizontal"
         @click="drawerOpen = true"
-      >
-        <span class="mr-1.5 inline-block h-3 w-3 align-middle">
-          <svg
-            viewBox="0 0 16 16"
-            class="h-3 w-3"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-          ><path
-            d="M2 4h12M4 8h8M6 12h4"
-            stroke-linecap="round"
-          /></svg>
-        </span>
-        筛选
-        <span
-          v-if="activeCount > 0"
-          class="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white"
-        >{{ activeCount }}</span>
-      </button>
-      <button
+      />
+      <UButton
         v-if="activeCount > 0"
-        class="btn-secondary shrink-0"
-        type="button"
+        color="neutral"
+        variant="outline"
+        label="清空"
         @click="onClear"
-      >
-        清空
-      </button>
+      />
     </div>
 
     <!-- 桌面端：左侧 sticky 栏（lg+ 显示） -->
     <aside
-      class="card sticky top-20 hidden w-60 shrink-0 self-start p-4 lg:block"
+      class="sticky top-20 hidden w-60 shrink-0 self-start rounded-xl border border-neutral-200 bg-white p-4 lg:block"
       aria-label="筛选条件"
     >
       <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-gray-900">{{ title }}</h2>
-        <button
+        <h2 class="text-sm font-semibold text-neutral-900">{{ title }}</h2>
+        <UButton
           v-if="activeCount > 0"
-          class="text-xs text-blue-600 hover:text-blue-700"
-          type="button"
+          variant="link"
+          color="primary"
+          size="xs"
+          :label="`清空（${activeCount}）`"
           @click="onClear"
-        >
-          清空（{{ activeCount }}）
-        </button>
+        />
       </div>
 
       <div class="space-y-4">
@@ -128,148 +122,94 @@ function onDrawerApply() {
           v-for="f in fields"
           :key="f.key"
         >
-          <label
-            :for="`side-${f.key}`"
-            class="mb-1 block text-xs font-medium text-gray-600"
-          >{{ f.label }}</label>
-
-          <input
-            v-if="f.type === 'text'"
-            :id="`side-${f.key}`"
-            :value="modelValue[f.key] ?? ''"
-            type="text"
-            class="input !py-1.5 !text-[13px]"
-            :placeholder="f.placeholder"
-            @input="onFieldChange(f.key, ($event.target as HTMLInputElement).value)"
-          >
-
-          <select
-            v-else-if="f.type === 'select'"
-            :id="`side-${f.key}`"
-            :value="modelValue[f.key] ?? ''"
-            class="select w-full !py-1.5 !text-[13px]"
-            @change="onFieldChange(f.key, ($event.target as HTMLSelectElement).value)"
-          >
-            <option
-              v-for="o in f.options"
-              :key="o.value"
-              :value="o.value"
-            >
-              {{ o.label }}
-            </option>
-          </select>
-
-          <input
-            v-else-if="f.type === 'number'"
-            :id="`side-${f.key}`"
-            :value="modelValue[f.key] ?? ''"
-            type="number"
-            :min="f.min"
-            class="input !py-1.5 !text-[13px]"
-            :placeholder="f.placeholder"
-            @input="onFieldChange(f.key, ($event.target as HTMLInputElement).value)"
-          >
+          <UFormField :label="f.label">
+            <UInput
+              v-if="f.type === 'text'"
+              :model-value="fieldValue(f)"
+              type="text"
+              class="w-full"
+              :placeholder="f.placeholder"
+              @update:model-value="onFieldChange(f.key, $event)"
+            />
+            <USelect
+              v-else-if="f.type === 'select'"
+              :model-value="fieldValue(f)"
+              :items="selectItems(f)"
+              class="w-full"
+              @update:model-value="onFieldChange(f.key, $event)"
+            />
+            <UInput
+              v-else-if="f.type === 'number'"
+              :model-value="fieldValue(f)"
+              type="number"
+              :min="f.min"
+              class="w-full"
+              :placeholder="f.placeholder"
+              @update:model-value="onFieldChange(f.key, $event)"
+            />
+          </UFormField>
         </div>
       </div>
     </aside>
 
-    <!-- 移动端：底部抽屉 -->
-    <Teleport to="body">
-      <Transition name="drawer">
-        <div
-          v-if="drawerOpen"
-          class="fixed inset-0 z-50 lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="筛选条件"
-        >
-          <div
-            class="absolute inset-0 bg-black/40"
-            @click="drawerOpen = false"
-          />
-          <div
-            class="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+    <!-- 移动端：底部抽屉（USlideover） -->
+    <USlideover
+      v-model:open="drawerOpen"
+      side="bottom"
+      title="筛选条件"
+      :description="`${title} · 已选 ${activeCount} 项`"
+    >
+      <template #body>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <UFormField
+            v-for="f in fields"
+            :key="f.key"
+            :label="f.label"
           >
-            <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-base font-semibold text-gray-900">{{ title }}</h2>
-              <button
-                class="text-sm text-gray-400"
-                type="button"
-                aria-label="关闭筛选"
-                @click="drawerOpen = false"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div
-                v-for="f in fields"
-                :key="f.key"
-              >
-                <label
-                  :for="`drawer-${f.key}`"
-                  class="mb-1 block text-xs font-medium text-gray-600"
-                >{{ f.label }}</label>
-
-                <input
-                  v-if="f.type === 'text'"
-                  :id="`drawer-${f.key}`"
-                  :value="modelValue[f.key] ?? ''"
-                  type="text"
-                  class="input"
-                  :placeholder="f.placeholder"
-                  @input="onFieldChange(f.key, ($event.target as HTMLInputElement).value)"
-                >
-
-                <select
-                  v-else-if="f.type === 'select'"
-                  :id="`drawer-${f.key}`"
-                  :value="modelValue[f.key] ?? ''"
-                  class="select w-full"
-                  @change="onFieldChange(f.key, ($event.target as HTMLSelectElement).value)"
-                >
-                  <option
-                    v-for="o in f.options"
-                    :key="o.value"
-                    :value="o.value"
-                  >
-                    {{ o.label }}
-                  </option>
-                </select>
-
-                <input
-                  v-else-if="f.type === 'number'"
-                  :id="`drawer-${f.key}`"
-                  :value="modelValue[f.key] ?? ''"
-                  type="number"
-                  :min="f.min"
-                  class="input"
-                  :placeholder="f.placeholder"
-                  @input="onFieldChange(f.key, ($event.target as HTMLInputElement).value)"
-                >
-              </div>
-            </div>
-
-            <div class="mt-5 flex gap-2">
-              <button
-                class="btn-secondary flex-1"
-                type="button"
-                @click="onClear"
-              >
-                清空
-              </button>
-              <button
-                class="btn-primary flex-1"
-                type="button"
-                @click="onDrawerApply"
-              >
-                应用（{{ activeCount }} 项）
-              </button>
-            </div>
-          </div>
+            <UInput
+              v-if="f.type === 'text'"
+              :model-value="fieldValue(f)"
+              type="text"
+              class="w-full"
+              :placeholder="f.placeholder"
+              @update:model-value="onFieldChange(f.key, $event)"
+            />
+            <USelect
+              v-else-if="f.type === 'select'"
+              :model-value="fieldValue(f)"
+              :items="selectItems(f)"
+              class="w-full"
+              @update:model-value="onFieldChange(f.key, $event)"
+            />
+            <UInput
+              v-else-if="f.type === 'number'"
+              :model-value="fieldValue(f)"
+              type="number"
+              :min="f.min"
+              class="w-full"
+              :placeholder="f.placeholder"
+              @update:model-value="onFieldChange(f.key, $event)"
+            />
+          </UFormField>
         </div>
-      </Transition>
-    </Teleport>
+      </template>
+
+      <template #footer>
+        <div class="flex gap-2">
+          <UButton
+            color="neutral"
+            variant="outline"
+            block
+            label="清空"
+            @click="onClear"
+          />
+          <UButton
+            block
+            :label="`应用（${activeCount} 项）`"
+            @click="onDrawerApply"
+          />
+        </div>
+      </template>
+    </USlideover>
   </div>
 </template>

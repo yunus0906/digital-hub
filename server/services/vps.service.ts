@@ -1,5 +1,5 @@
 // VPS 服务：套餐列表、筛选（地区/配置/价格）、排序、详情
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/generated-client'
 import prisma from '../utils/prisma'
 import { buildMeta, parsePagination } from '../utils/api'
 import { normalizePrice, toNumber } from '../utils/price'
