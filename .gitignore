@@ -1,0 +1,41 @@
+# 依赖
+node_modules/
+.nuxt/
+.output/
+.dist/
+.nitro/
+.cache/
+
+# 环境变量（含密钥，禁止提交）
+.env
+.env.*
+!.env.example
+
+# 日志
+*.log
+npm-debug.log*
+logs/
+
+# 构建产物
+dist/
+build/
+
+# 测试覆盖率
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# Prisma 生成
+prisma/generated/
+
+# 临时
+*.tmp
+.workbuddy

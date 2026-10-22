@@ -1,0 +1,623 @@
+// DigitalHub - 数字服务价格导航平台
+// 数据模型设计遵循《数字服务价格导航平台_开发方案.md》第 6 节
+// 采用「统一产品主表 + 业务子表 + 价格与来源历史」设计
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 枚举（统一为受控字符串）
+// ---------------------------------------------------------------------------
+
+enum VendorType {
+  provider
+  developer
+  brand
+  operator
+}
+
+enum ProductCategory {
+  airport
+  client_app
+  proxy_core
+  vps_plan
+  ai_model
+  dev_service
+}
+
+enum ProductStatus {
+  draft
+  pending_review
+  published
+  archived
+}
+
+enum DataStatus {
+  verified
+  community_submitted
+  auto_collected
+  stale
+  disputed
+  unknown
+}
+
+enum LinkType {
+  official
+  purchase
+  github
+  download
+  docs
+  status_page
+  other
+}
+
+enum SourceType {
+  official
+  api
+  github
+  manual
+  community
+}
+
+enum BillingPeriod {
+  month
+  quarter
+  half_year
+  year
+  one_time
+  usage
+  hour
+  custom
+}
+
+enum Currency {
+  CNY
+  USD
+  EUR
+  HKD
+  JPY
+}
+
+enum TrafficType {
+  fixed
+  unlimited
+  usage_based
+  unknown
+}
+
+enum ServiceStatus {
+  active
+  maintenance
+  suspended
+  discontinued
+  unknown
+}
+
+enum ApplicationType {
+  client
+  core
+  rules_tool
+  helper
+  other
+}
+
+enum CodeStatus {
+  open_source
+  closed_source
+  partial_source
+  incomplete_source
+  undisclosed
+  license_unconfirmed
+}
+
+enum PriceStatus {
+  free
+  paid
+  freemium
+  unknown
+}
+
+enum MaintenanceStatus {
+  active
+  low_activity
+  discontinued
+  unknown
+}
+
+enum SupportStatus {
+  full
+  partial
+  planned
+  unknown
+}
+
+enum VpsProductType {
+  vps
+  cloud_vm
+  dedicated_server
+  gpu_server
+  other
+}
+
+enum CpuSharing {
+  shared
+  dedicated
+  burstable
+  unknown
+}
+
+enum TrafficDirection {
+  inbound
+  outbound
+  both
+  unknown
+}
+
+// ---------------------------------------------------------------------------
+// 核心实体
+// ---------------------------------------------------------------------------
+
+model Vendor {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique
+  description String?
+  websiteUrl  String?
+  logoUrl     String?
+  vendorType  VendorType    @default(brand)
+  status      ProductStatus @default(published)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  products  Product[]
+  locations VpsLocation[]
+
+  @@map("vendors")
+}
+
+model Product {
+  id             String          @id @default(uuid())
+  vendorId       String?         @map("vendor_id")
+  category       ProductCategory
+  name           String
+  slug           String          @unique
+  summary        String?
+  description    String?
+  logoUrl        String?         @map("logo_url")
+  officialUrl    String?         @map("official_url")
+  status         ProductStatus   @default(draft)
+  dataStatus     DataStatus      @default(unknown) @map("data_status")
+  lastVerifiedAt DateTime?       @map("last_verified_at")
+  publishedAt    DateTime?       @map("published_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  deletedAt      DateTime?       @map("deleted_at")
+
+  vendor        Vendor?              @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  links         ProductLink[]
+  tags          ProductTag[]
+  dataSources   ProductDataSource[]
+  priceRecords  PriceRecord[]
+  priceHistory  PriceHistoryEvent[]
+  reviews       Review[]
+  favorites     Favorite[]
+  airportDetail AirportDetail?
+  airportPlans  AirportPlan[]
+  networkTests  AirportNetworkTest[]
+  clientApp     ClientApplication?
+  releases      ClientRelease[]
+  vpsPlans      VpsPlan[]
+
+  @@index([category, status, publishedAt])
+  @@index([status, deletedAt])
+  @@index([vendorId])
+  @@index([updatedAt])
+  @@map("products")
+}
+
+model ProductLink {
+  id            String    @id @default(uuid())
+  productId     String    @map("product_id")
+  linkType      LinkType
+  url           String
+  label         String?
+  isOfficial    Boolean   @default(false) @map("is_official")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastCheckedAt DateTime? @map("last_checked_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_links")
+}
+
+model Tag {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  category    String?
+  description String?
+
+  products ProductTag[]
+
+  @@map("tags")
+}
+
+model ProductTag {
+  productId String @map("product_id")
+  tagId     String @map("tag_id")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tags")
+}
+
+model DataSource {
+  id               String     @id @default(uuid())
+  name             String
+  sourceType       SourceType @map("source_type")
+  sourceUrl        String?    @map("source_url")
+  termsUrl         String?    @map("terms_url")
+  reliabilityLevel Int        @default(1) @map("reliability_level")
+  notes            String?
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  productDataSources ProductDataSource[]
+
+  @@map("data_sources")
+}
+
+model ProductDataSource {
+  productId    String    @map("product_id")
+  dataSourceId String    @map("data_source_id")
+  fieldKey     String    @map("field_key")
+  sourceUrl    String?   @map("source_url")
+  collectedAt  DateTime? @map("collected_at")
+  verifiedAt   DateTime? @map("verified_at")
+  confidence   Int       @default(50) // 0-100
+  rawValue     Json?     @map("raw_value")
+
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  dataSource DataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+
+  @@id([productId, dataSourceId, fieldKey])
+  @@map("product_data_sources")
+}
+
+model PriceRecord {
+  id                String        @id @default(uuid())
+  productId         String        @map("product_id")
+  planId            String?       @map("plan_id")
+  amount            Decimal       @db.Decimal(12, 2)
+  currency          Currency      @default(CNY)
+  billingPeriod     BillingPeriod @map("billing_period")
+  billingPeriodDays Int?          @map("billing_period_days")
+  isPromotional     Boolean       @default(false) @map("is_promotional")
+  promotionEndAt    DateTime?     @map("promotion_end_at")
+  renewalAmount     Decimal?      @map("renewal_amount") @db.Decimal(12, 2)
+  usageUnit         String?       @map("usage_unit")
+  sourceUrl         String?       @map("source_url")
+  validFrom         DateTime      @map("valid_from")
+  validTo           DateTime?     @map("valid_to")
+  observedAt        DateTime      @default(now()) @map("observed_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, validFrom])
+  @@index([productId, billingPeriod])
+  @@map("price_records")
+}
+
+model PriceHistoryEvent {
+  id         String   @id @default(uuid())
+  productId  String   @map("product_id")
+  planId     String?  @map("plan_id")
+  eventType  String   @map("event_type") // price_changed / plan_added / plan_removed / terms_changed
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  sourceUrl  String?  @map("source_url")
+  observedAt DateTime @default(now()) @map("observed_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, observedAt])
+  @@map("price_history_events")
+}
+
+model Review {
+  id        String        @id @default(uuid())
+  productId String        @map("product_id")
+  userId    String?       @map("user_id")
+  rating    Int
+  title     String?
+  content   String?
+  status    ProductStatus @default(pending_review)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@map("reviews")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("favorites")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?  @map("actor_user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  beforeData  Json?    @map("before_data")
+  afterData   Json?    @map("after_data")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// 机场子表
+// ---------------------------------------------------------------------------
+
+model AirportDetail {
+  productId                  String        @id @map("product_id")
+  trafficType                TrafficType   @default(unknown) @map("traffic_type")
+  monthlyTrafficGb           Int?          @map("monthly_traffic_gb")
+  deviceLimit                Int?          @map("device_limit")
+  groupMemberCount           Int?          @map("group_member_count")
+  groupMemberCountObservedAt DateTime?     @map("group_member_count_observed_at")
+  refundPolicy               String?       @map("refund_policy")
+  trialAvailable             Boolean?      @map("trial_available")
+  serviceStatus              ServiceStatus @default(unknown) @map("service_status")
+  notes                      String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("airport_details")
+}
+
+model AirportPlan {
+  id            String        @id @default(uuid())
+  productId     String        @map("product_id")
+  name          String
+  billingPeriod BillingPeriod @map("billing_period")
+  priceRecordId String?       @map("price_record_id")
+  trafficType   TrafficType   @default(unknown) @map("traffic_type")
+  trafficGb     Int?          @map("traffic_gb")
+  deviceLimit   Int?          @map("device_limit")
+  resetPolicy   String?       @map("reset_policy")
+  renewalTerms  String?       @map("renewal_terms")
+  purchaseUrl   String?       @map("purchase_url")
+  status        ProductStatus @default(published)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@map("airport_plans")
+}
+
+model AirportNetworkTest {
+  id                String   @id @default(uuid())
+  productId         String   @map("product_id")
+  planId            String?  @map("plan_id")
+  testRegion        String   @map("test_region")
+  testNetwork       String?  @map("test_network")
+  latencyMs         Int?     @map("latency_ms")
+  downloadMbps      Int?     @map("download_mbps")
+  uploadMbps        Int?     @map("upload_mbps")
+  packetLossPercent Decimal? @map("packet_loss_percent") @db.Decimal(5, 2)
+  testMethod        String   @map("test_method")
+  sampleSize        Int?     @map("sample_size")
+  testedAt          DateTime @map("tested_at")
+  sourceUrl         String?  @map("source_url")
+  notes             String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, testedAt])
+  @@map("airport_network_tests")
+}
+
+// ---------------------------------------------------------------------------
+// 客户端与内核子表
+// ---------------------------------------------------------------------------
+
+model ClientApplication {
+  productId         String            @id @map("product_id")
+  applicationType   ApplicationType   @default(client) @map("application_type")
+  codeStatus        CodeStatus        @default(license_unconfirmed) @map("code_status")
+  licenseName       String?           @map("license_name")
+  priceStatus       PriceStatus       @default(unknown) @map("price_status")
+  maintenanceStatus MaintenanceStatus @default(unknown) @map("maintenance_status")
+  repositoryUrl     String?           @map("repository_url")
+  latestReleaseAt   DateTime?         @map("latest_release_at")
+  lastCommitAt      DateTime?         @map("last_commit_at")
+  starsCount        Int?              @map("stars_count")
+  forksCount        Int?              @map("forks_count")
+  metricsObservedAt DateTime?         @map("metrics_observed_at")
+
+  product    Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platforms  ClientAppPlatform[]
+  coreCompat ClientCoreCompat[]
+
+  @@map("client_applications")
+}
+
+// 注意：ClientAppPlatform 与 ClientApplication 通过共享主键 productId 关联，
+// 但 Prisma 不允许一个字段同时作为两个关系的外键，因此 ClientAppPlatform
+// 直接关联 ClientApplication（其主键即 productId），不再重复关联 Product。
+
+model ClientPlatform {
+  id   String @id @default(uuid())
+  code String @unique
+  name String
+
+  apps ClientAppPlatform[]
+
+  @@map("client_platforms")
+}
+
+model ClientAppPlatform {
+  productId     String        @map("product_id")
+  platformId    String        @map("platform_id")
+  supportStatus SupportStatus @default(full) @map("support_status")
+  notes         String?
+
+  clientApp ClientApplication @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  platform  ClientPlatform    @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([productId, platformId])
+  @@map("client_application_platforms")
+}
+
+model ProxyCore {
+  id            String        @id @default(uuid())
+  name          String
+  slug          String        @unique
+  officialUrl   String?       @map("official_url")
+  repositoryUrl String?       @map("repository_url")
+  licenseName   String?       @map("license_name")
+  status        ProductStatus @default(published)
+
+  clients ClientCoreCompat[]
+
+  @@map("proxy_cores")
+}
+
+model ClientCoreCompat {
+  clientProductId       String        @map("client_product_id")
+  coreId                String        @map("core_id")
+  compatibilityStatus   SupportStatus @default(unknown) @map("compatibility_status")
+  supportedVersionRange String?       @map("supported_version_range")
+  notes                 String?
+  verifiedAt            DateTime?     @map("verified_at")
+
+  client ClientApplication @relation(fields: [clientProductId], references: [productId], onDelete: Cascade)
+  core   ProxyCore         @relation(fields: [coreId], references: [id], onDelete: Cascade)
+
+  @@id([clientProductId, coreId])
+  @@map("client_core_compatibility")
+}
+
+model ClientRelease {
+  id          String   @id @default(uuid())
+  productId   String   @map("product_id")
+  version     String
+  releasedAt  DateTime @map("released_at")
+  releaseUrl  String?  @map("release_url")
+  downloadUrl String?  @map("download_url")
+  changelog   String?
+  sourceId    String?  @map("source_id")
+  observedAt  DateTime @default(now()) @map("observed_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, releasedAt])
+  @@map("client_releases")
+}
+
+// ---------------------------------------------------------------------------
+// VPS 子表
+// ---------------------------------------------------------------------------
+
+model VpsLocation {
+  id             String  @id @default(uuid())
+  vendorId       String  @map("vendor_id")
+  countryCode    String  @map("country_code")
+  countryName    String  @map("country_name")
+  city           String?
+  datacenterName String? @map("datacenter_name")
+  regionCode     String? @map("region_code")
+  notes          String?
+
+  vendor Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  plans  VpsPlan[]
+
+  @@index([vendorId])
+  @@index([countryCode])
+  @@map("vps_locations")
+}
+
+model VpsPlan {
+  id                  String           @id @default(uuid())
+  productId           String           @map("product_id")
+  locationId          String           @map("location_id")
+  planName            String           @map("plan_name")
+  productType         VpsProductType   @default(vps) @map("product_type")
+  virtualizationType  String?          @map("virtualization_type")
+  cpuModel            String?          @map("cpu_model")
+  cpuArchitecture     String?          @map("cpu_architecture")
+  vcpuCount           Int?             @map("vcpu_count")
+  cpuSharing          CpuSharing       @default(unknown) @map("cpu_sharing")
+  memoryMb            Int?             @map("memory_mb")
+  storageGb           Int?             @map("storage_gb")
+  storageType         String?          @map("storage_type")
+  bandwidthMbps       Int?             @map("bandwidth_mbps")
+  bandwidthType       String?          @map("bandwidth_type")
+  trafficGb           Int?             @map("traffic_gb")
+  trafficDirection    TrafficDirection @default(unknown) @map("traffic_direction")
+  ipv4Count           Int?             @map("ipv4_count")
+  ipv6Supported       Boolean?         @map("ipv6_supported")
+  virtualizationNotes String?          @map("virtualization_notes")
+  refundPolicy        String?          @map("refund_policy")
+  availabilityStatus  String?          @map("availability_status")
+  purchaseUrl         String?          @map("purchase_url")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location     VpsLocation      @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  networkTests VpsNetworkTest[]
+
+  @@index([productId])
+  @@index([locationId])
+  @@index([productType])
+  @@map("vps_plans")
+}
+
+model VpsNetworkTest {
+  id                String   @id @default(uuid())
+  vpsPlanId         String   @map("vps_plan_id")
+  testLocation      String   @map("test_location")
+  isp               String?
+  latencyMs         Int?     @map("latency_ms")
+  downloadMbps      Int?     @map("download_mbps")
+  uploadMbps        Int?     @map("upload_mbps")
+  packetLossPercent Decimal? @map("packet_loss_percent") @db.Decimal(5, 2)
+  routeType         String?  @map("route_type")
+  testTool          String   @map("test_tool")
+  testedAt          DateTime @map("tested_at")
+  sourceUrl         String?  @map("source_url")
+  notes             String?
+
+  vpsPlan VpsPlan @relation(fields: [vpsPlanId], references: [id], onDelete: Cascade)
+
+  @@index([vpsPlanId, testedAt])
+  @@map("vps_network_tests")
+}
