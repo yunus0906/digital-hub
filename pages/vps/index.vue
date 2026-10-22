@@ -3,7 +3,6 @@
 import type { FilterField } from '~/components/FilterSidebar.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 const filters = reactive({
   q: (route.query.q as string) ?? '',
@@ -44,41 +43,14 @@ const sortOptions = [
   { value: 'bandwidth', label: '带宽' },
 ]
 
-function buildQuery() {
-  const q: Record<string, string> = {}
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v !== '' && v !== null && v !== undefined && v !== '__all__' && !(k === 'page' && v === 1)) {
-      q[k] = String(v)
-    }
-  })
-  return q
-}
-
-let timer: ReturnType<typeof setTimeout> | null = null
-function scheduleApply() {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(() => {
-    filters.page = 1
-    router.replace({ path: '/vps', query: buildQuery() })
-  }, 300)
-}
+const { scheduleApply, applyNow, goPage, resetQuery } = useListingQuery('/vps', filters)
 
 function clearFilters() {
   Object.assign(filters, {
     q: '', countryCode: '', productType: '__all__', minMemory: '', minVcpu: '',
     minPrice: '', maxPrice: '', sort: 'recommended', order: 'desc', page: 1,
   })
-  router.replace({ path: '/vps' })
-}
-
-function applyNow() {
-  if (timer) clearTimeout(timer)
-  router.replace({ path: '/vps', query: buildQuery() })
-}
-
-function goPage(p: number) {
-  filters.page = p
-  router.replace({ path: '/vps', query: buildQuery() })
+  resetQuery()
 }
 
 const { data, pending, error, refresh } = await useFetch<{ data: any[], meta: any }>('/api/v1/vps', {
@@ -101,10 +73,6 @@ function fmtPrice(v: number | null) {
   return v === null ? '价格待核实' : `¥${v.toFixed(2)}/月`
 }
 
-function fmtMem(mb: number | null) {
-  if (mb === null) return '—'
-  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`
-}
 </script>
 
 <template>

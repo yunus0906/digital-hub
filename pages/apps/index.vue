@@ -3,7 +3,6 @@
 import type { FilterField } from '~/components/FilterSidebar.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 const filters = reactive({
   q: (route.query.q as string) ?? '',
@@ -78,41 +77,14 @@ const sortOptions = [
   { value: 'last_commit', label: '最近提交' },
 ]
 
-function buildQuery() {
-  const q: Record<string, string> = {}
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v !== '' && v !== null && v !== undefined && v !== '__all__' && !(k === 'page' && v === 1)) {
-      q[k] = String(v)
-    }
-  })
-  return q
-}
-
-let timer: ReturnType<typeof setTimeout> | null = null
-function scheduleApply() {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(() => {
-    filters.page = 1
-    router.replace({ path: '/apps', query: buildQuery() })
-  }, 300)
-}
+const { scheduleApply, applyNow, goPage, resetQuery } = useListingQuery('/apps', filters)
 
 function clearFilters() {
   Object.assign(filters, {
     q: '', platform: '__all__', applicationType: '__all__', codeStatus: '__all__', priceStatus: '__all__',
     maintenanceStatus: '__all__', sort: 'recommended', order: 'desc', page: 1,
   })
-  router.replace({ path: '/apps' })
-}
-
-function applyNow() {
-  if (timer) clearTimeout(timer)
-  router.replace({ path: '/apps', query: buildQuery() })
-}
-
-function goPage(p: number) {
-  filters.page = p
-  router.replace({ path: '/apps', query: buildQuery() })
+  resetQuery()
 }
 
 const { data, pending, error, refresh } = await useFetch<{ data: any[], meta: any }>('/api/v1/apps', {
@@ -131,18 +103,6 @@ const activeCount = computed(
     .filter(k => { const v = (filters as any)[k]; return v && v !== '__all__' }).length,
 )
 
-function codeStatusLabel(s: string) {
-  const map: Record<string, string> = {
-    open_source: '开源', closed_source: '闭源', partial_source: '部分开源',
-    incomplete_source: '源码不完整', undisclosed: '未公布', license_unconfirmed: '许可证未确认',
-  }
-  return map[s] ?? s
-}
-
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('zh-CN')
-}
 </script>
 
 <template>

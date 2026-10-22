@@ -2,6 +2,7 @@
 import type { Prisma } from '@prisma/generated-client'
 import prisma from '../utils/prisma'
 import { buildMeta, parsePagination } from '../utils/api'
+import { mapDataSource, mapLink, mapTag } from '../utils/product-dto'
 
 export interface AppListQuery {
   page?: string
@@ -145,7 +146,7 @@ function toAppCard(p: any) {
       compatibilityStatus: c.compatibilityStatus,
       supportedVersionRange: c.supportedVersionRange,
     })) ?? [],
-    tags: p.tags.map((t: any) => ({ name: t.tag.name, slug: t.tag.slug })),
+    tags: p.tags.map(mapTag),
     vendor: p.vendor ? { name: p.vendor.name, slug: p.vendor.slug } : null,
   }
 }
@@ -189,21 +190,10 @@ export async function getAppBySlug(slug: string) {
     vendor: product.vendor
       ? { name: product.vendor.name, slug: product.vendor.slug }
       : null,
-    tags: product.tags.map(t => ({ name: t.tag.name, slug: t.tag.slug })),
-    links: product.links.map(l => ({
-      type: l.linkType,
-      url: l.url,
-      label: l.label,
-      isOfficial: l.isOfficial,
-    })),
+    tags: product.tags.map(mapTag),
+    links: product.links.map(mapLink),
     clientApp: product.clientApp,
     releases: product.releases,
-    dataSources: product.dataSources.map(ds => ({
-      name: ds.dataSource.name,
-      type: ds.dataSource.sourceType,
-      sourceUrl: ds.sourceUrl,
-      fieldKey: ds.fieldKey,
-      verifiedAt: ds.verifiedAt,
-    })),
+    dataSources: product.dataSources.map(mapDataSource),
   }
 }

@@ -4,7 +4,6 @@
 import type { FilterField } from '~/components/FilterSidebar.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 // 从 URL 同步筛选状态
 const filters = reactive({
@@ -62,27 +61,7 @@ const sortOptions = [
   { value: 'recently_updated', label: '最近更新' },
 ]
 
-// 构建查询参数
-function buildQuery() {
-  const q: Record<string, string> = {}
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v !== '' && v !== null && v !== undefined && v !== '__all__' && v !== 1) {
-      q[k] = String(v)
-    }
-    if (k === 'page' && v !== 1 && v) q[k] = String(v)
-  })
-  return q
-}
-
-// 即时生效：字段变化后防抖 300ms 同步 URL
-let timer: ReturnType<typeof setTimeout> | null = null
-function scheduleApply() {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(() => {
-    filters.page = 1
-    router.replace({ path: '/airports', query: buildQuery() })
-  }, 300)
-}
+const { scheduleApply, applyNow, goPage, resetQuery } = useListingQuery('/airports', filters)
 
 function clearFilters() {
   filters.q = ''
@@ -95,18 +74,7 @@ function clearFilters() {
   filters.sort = 'recommended'
   filters.order = 'desc'
   filters.page = 1
-  router.replace({ path: '/airports' })
-}
-
-// 排序/分页等即时生效（无需防抖）
-function applyNow() {
-  if (timer) clearTimeout(timer)
-  router.replace({ path: '/airports', query: buildQuery() })
-}
-
-function goPage(p: number) {
-  filters.page = p
-  router.replace({ path: '/airports', query: buildQuery() })
+  resetQuery()
 }
 
 // 数据请求（响应式依赖 route.query）

@@ -252,7 +252,7 @@ async function main() {
     },
   })
 
-  await prisma.vpsPlan.create({
+  const vpsBasicPlan = await prisma.vpsPlan.create({
     data: {
       productId: vps1.id,
       locationId: locUS.id,
@@ -276,7 +276,7 @@ async function main() {
     },
   })
 
-  await prisma.vpsPlan.create({
+  const vpsAdvancedPlan = await prisma.vpsPlan.create({
     data: {
       productId: vps1.id,
       locationId: locHK.id,
@@ -302,8 +302,8 @@ async function main() {
 
   await prisma.priceRecord.createMany({
     data: [
-      { productId: vps1.id, amount: 5, currency: 'USD', billingPeriod: 'month', validFrom: new Date() },
-      { productId: vps1.id, amount: 50, currency: 'USD', billingPeriod: 'year', isPromotional: true, validFrom: new Date() },
+      { productId: vps1.id, planId: vpsBasicPlan.id, amount: 5, currency: 'USD', billingPeriod: 'month', validFrom: new Date() },
+      { productId: vps1.id, planId: vpsAdvancedPlan.id, amount: 50, currency: 'USD', billingPeriod: 'year', isPromotional: true, validFrom: new Date() },
     ],
   })
 

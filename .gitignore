@@ -39,3 +39,4 @@ prisma/generated/
 # 临时
 *.tmp
 .workbuddy
+tests

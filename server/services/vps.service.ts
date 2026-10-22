@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/generated-client'
 import prisma from '../utils/prisma'
 import { buildMeta, parsePagination } from '../utils/api'
 import { normalizePrice, toNumber } from '../utils/price'
+import { mapDataSource, mapLink, mapTag } from '../utils/product-dto'
 
 export interface VpsListQuery {
   page?: string
@@ -63,7 +64,7 @@ export async function listVps(query: VpsListQuery) {
       vpsPlans: {
         include: { location: true, networkTests: { orderBy: { testedAt: 'desc' } } },
       },
-      priceRecords: { where: { validTo: null } },
+      priceRecords: { where: { validTo: null }, orderBy: { validFrom: 'desc' } },
     },
   })
 
@@ -81,13 +82,12 @@ export async function listVps(query: VpsListQuery) {
       // 套餐级筛选：地区
       if (query.countryCode && plan.location?.countryCode !== query.countryCode) continue
 
-      // 找到该套餐关联的价格（priceRecords 无 planId 字段，MVP 用产品级价格 + 套餐名匹配）
-      // 说明：price_records.plan_id 为可空，VPS 场景将套餐价格挂在产品级 priceRecords
-      const price = p.priceRecords[0] ? normalizePrice(p.priceRecords[0]) : null
+      const priceRecord = p.priceRecords.find(r =>
+        r.planId === plan.id && (!billingPeriod || r.billingPeriod === billingPeriod),
+      )
+      const price = priceRecord ? normalizePrice(priceRecord) : null
       const monthly = price?.monthlyEquivalent ?? null
-      if (price && billingPeriod && price.billingPeriod !== billingPeriod) {
-        continue
-      }
+      if (billingPeriod && price?.billingPeriod !== billingPeriod) continue
       items.push({
         productId: p.id,
         productSlug: p.slug,
@@ -139,6 +139,7 @@ export async function listVps(query: VpsListQuery) {
   }
 
   // 排序
+  const updatedAtByProductId = new Map(products.map(p => [p.id, p.updatedAt.getTime()]))
   items.sort((a, b) => {
     const cmp = (x: number | null, y: number | null) => {
       if (x === null && y === null) return 0
@@ -153,6 +154,11 @@ export async function listVps(query: VpsListQuery) {
         return cmp(a.memoryMb, b.memoryMb)
       case 'bandwidth':
         return cmp(a.bandwidthMbps, b.bandwidthMbps)
+      case 'recently_updated': {
+        const da = updatedAtByProductId.get(a.productId)!
+        const db = updatedAtByProductId.get(b.productId)!
+        return order === 'asc' ? da - db : db - da
+      }
       case 'recommended':
       default: {
         // 有价格 + 配置信息完整者优先
@@ -187,7 +193,8 @@ export async function getVpsBySlug(slug: string) {
   if (!product) return null
 
   const plans = product.vpsPlans.map((plan) => {
-    const price = product.priceRecords[0] ? normalizePrice(product.priceRecords[0]) : null
+    const priceRecord = product.priceRecords.find(r => r.planId === plan.id && r.validTo === null)
+    const price = priceRecord ? normalizePrice(priceRecord) : null
     return {
       id: plan.id,
       planName: plan.planName,
@@ -244,21 +251,10 @@ export async function getVpsBySlug(slug: string) {
     vendor: product.vendor
       ? { name: product.vendor.name, slug: product.vendor.slug, websiteUrl: product.vendor.websiteUrl }
       : null,
-    tags: product.tags.map(t => ({ name: t.tag.name, slug: t.tag.slug })),
-    links: product.links.map(l => ({
-      type: l.linkType,
-      url: l.url,
-      label: l.label,
-      isOfficial: l.isOfficial,
-    })),
+    tags: product.tags.map(mapTag),
+    links: product.links.map(mapLink),
     plans,
     priceHistory,
-    dataSources: product.dataSources.map(ds => ({
-      name: ds.dataSource.name,
-      type: ds.dataSource.sourceType,
-      sourceUrl: ds.sourceUrl,
-      fieldKey: ds.fieldKey,
-      verifiedAt: ds.verifiedAt,
-    })),
+    dataSources: product.dataSources.map(mapDataSource),
   }
 }

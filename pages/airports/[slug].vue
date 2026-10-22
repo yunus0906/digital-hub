@@ -10,12 +10,6 @@ const { data, pending, error } = await useFetch<{ data: any }>(`/api/v1/airports
 const airport = computed(() => data.value?.data)
 const showSkeleton = computed(() => pending.value && !data.value)
 
-// 时间格式化
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('zh-CN')
-}
-
 function periodLabel(p: string) {
   const map: Record<string, string> = {
     month: '月付',

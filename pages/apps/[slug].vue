@@ -10,19 +10,6 @@ const { data, pending, error } = await useFetch<{ data: any }>(`/api/v1/apps/${s
 const app = computed(() => data.value?.data)
 const showSkeleton = computed(() => pending.value && !data.value)
 
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('zh-CN')
-}
-
-function codeStatusLabel(s: string) {
-  const map: Record<string, string> = {
-    open_source: '开源', closed_source: '闭源', partial_source: '部分开源',
-    incomplete_source: '源码不完整', undisclosed: '未公布', license_unconfirmed: '许可证未确认',
-  }
-  return map[s] ?? s
-}
-
 function priceStatusLabel(s: string) {
   const map: Record<string, string> = { free: '免费', paid: '付费', freemium: '免费增值', unknown: '待核实' }
   return map[s] ?? s

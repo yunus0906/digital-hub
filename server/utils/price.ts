@@ -10,18 +10,6 @@ export interface NormalizedPrice {
   renewalAmount: number | null
 }
 
-const PERIOD_DAYS: Record<BillingPeriod, number | null> = {
-  month: 30,
-  quarter: 90,
-  half_year: 180,
-  year: 365,
-  // 一次性/按量/按小时不可直接折算为月均价
-  one_time: null,
-  usage: null,
-  hour: null,
-  custom: null,
-}
-
 const PERIOD_MONTHS: Record<BillingPeriod, number | null> = {
   month: 1,
   quarter: 3,
@@ -42,10 +30,6 @@ export function monthlyEquivalent(amount: number, period: BillingPeriod): number
   const months = PERIOD_MONTHS[period]
   if (months === null) return null
   return round(amount / months)
-}
-
-export function periodDays(period: BillingPeriod): number | null {
-  return PERIOD_DAYS[period] ?? null
 }
 
 export function round(n: number, precision = 2): number {

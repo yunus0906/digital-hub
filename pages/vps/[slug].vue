@@ -10,16 +10,6 @@ const { data, pending, error } = await useFetch<{ data: any }>(`/api/v1/vps/${sl
 const vps = computed(() => data.value?.data)
 const showSkeleton = computed(() => pending.value && !data.value)
 
-function fmtDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('zh-CN')
-}
-
-function fmtMem(mb: number | null) {
-  if (mb === null) return '—'
-  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`
-}
-
 useHead(() => ({
   title: vps.value ? `${vps.value.name} - VPS - DigitalHub` : 'VPS 详情',
   meta: [{ name: 'description', content: vps.value?.summary ?? 'VPS 套餐详情' }],

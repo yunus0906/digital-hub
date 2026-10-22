@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/generated-client'
 import prisma from '../utils/prisma'
 import { buildMeta, parsePagination } from '../utils/api'
 import { normalizePrice, toNumber } from '../utils/price'
+import { mapDataSource, mapLink, mapTag } from '../utils/product-dto'
 
 export interface AirportListQuery {
   page?: string
@@ -67,6 +68,14 @@ export async function listAirports(query: AirportListQuery) {
   }
   if (Object.keys(detailWhere).length > 0) {
     where.airportDetail = { is: detailWhere }
+  }
+  if (query.billingPeriod) {
+    where.airportPlans = {
+      some: {
+        status: 'published',
+        billingPeriod: query.billingPeriod as Prisma.EnumBillingPeriodFilter['equals'],
+      },
+    }
   }
 
   // 价格区间筛选（基于折算月均价，需在应用层过滤）
@@ -199,7 +208,7 @@ function toAirportCard(p: any) {
     groupMemberCount: p.airportDetail?.groupMemberCount ?? null,
     groupMemberCountObservedAt: p.airportDetail?.groupMemberCountObservedAt ?? null,
     billingPeriods: p.airportPlans.map((pl: any) => pl.billingPeriod),
-    tags: p.tags.map((t: any) => ({ name: t.tag.name, slug: t.tag.slug })),
+    tags: p.tags.map(mapTag),
     vendor: p.vendor ? { name: p.vendor.name, slug: p.vendor.slug } : null,
   }
 }
@@ -269,23 +278,14 @@ export async function getAirportBySlug(slug: string) {
     vendor: product.vendor
       ? { name: product.vendor.name, slug: product.vendor.slug, websiteUrl: product.vendor.websiteUrl }
       : null,
-    tags: product.tags.map(t => ({ name: t.tag.name, slug: t.tag.slug })),
-    links: product.links.map(l => ({
-      type: l.linkType,
-      url: l.url,
-      label: l.label,
-      isOfficial: l.isOfficial,
-    })),
+    tags: product.tags.map(mapTag),
+    links: product.links.map(mapLink),
     airportDetail: product.airportDetail,
     plans,
     priceHistory,
     networkTests: product.networkTests,
     dataSources: product.dataSources.map(ds => ({
-      name: ds.dataSource.name,
-      type: ds.dataSource.sourceType,
-      sourceUrl: ds.sourceUrl,
-      fieldKey: ds.fieldKey,
-      verifiedAt: ds.verifiedAt,
+      ...mapDataSource(ds),
       confidence: ds.confidence,
     })),
   }
