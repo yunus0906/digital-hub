@@ -97,3 +97,21 @@ body {
     animation: none;
   }
 }
+
+/* 移动端筛选抽屉过渡 */
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: opacity 0.2s ease;
+}
+.drawer-enter-active > div:last-child,
+.drawer-leave-active > div:last-child {
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-enter-from,
+.drawer-leave-to {
+  opacity: 0;
+}
+.drawer-enter-from > div:last-child,
+.drawer-leave-to > div:last-child {
+  transform: translateY(100%);
+}
